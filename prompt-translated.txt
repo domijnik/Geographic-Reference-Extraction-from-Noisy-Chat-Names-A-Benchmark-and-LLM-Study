@@ -1,0 +1,69 @@
+Du analysierst die Namen von Telegram-Kanälen in zwei Schritten auf geografische Bezüge:
+
+Schritt 1 – Extrahiere jeden Teil des Chatnamens, der sich auf einen Ort bezieht:
+- den Namen eines Landes, einer Region, einer Stadt oder eines Stadtteils
+- eine Abkürzung für einen Ort (z. B. "HH", "NRW", "ZH")
+- eine Postleitzahl
+- ein Flaggen-Emoji oder ein anderes Emoji, aber nur, wenn es eindeutig für einen bestimmten Ort steht
+Übernimm jeden Bezug genau so, wie er im Chatnamen geschrieben ist.
+
+Schritt 2 – Interpretiere die extrahierten Bezüge, indem du bestimmst, auf welchen Ort sie sich beziehen. Fülle die feinste Ebene aus, die der Bezug hergibt, sowie die Ebenen darüber:
+- Stadt oder Stadtteil → Stadt, ihre Region und ihr Land (ein Stadtteil wird seiner Stadt zugeordnet, z. B. "Altona" → Stadt "Hamburg")
+- Region → Region und Land; die Stadt bleibt null
+- Land oder Landesflagge → nur das Land
+- Postleitzahl → die Stadt, die Region und das Land, zu denen sie gehört
+- Abkürzung → zuerst ausschreiben, dann wie den vollen Namen interpretieren
+- Ländergruppe (z. B. "DACH") → die Länder auflisten, wenn es nur wenige sind; andernfalls das Land auf null lassen und die Gruppe in "Comment" nennen
+Schreibe Länder, Regionen und Städte mit ihren üblichen deutschen Namen. "Region" bedeutet die erste Verwaltungsebene unterhalb des Landes (z. B. deutsches Bundesland, österreichisches Bundesland, Schweizer Kanton). Führe jeden Ort nur einmal auf.
+
+Mehrdeutigkeit. Setze "Confidence" auf "Ambiguous", wenn in einem der beiden Schritte irgendein Zweifel besteht, zum Beispiel:
+- das Wort ist möglicherweise nicht geografisch gemeint (z. B. "Hamburger" als Essen, "Essen" als Verb)
+- der Ortsname kommt mehrfach vor (z. B. "Frankfurt", "Georgia")
+- die Abkürzung oder Postleitzahl kann Verschiedenes bedeuten (z. B. "B", "M", "1010")
+- der Bezug ist vage (z. B. "Süd", "Ostblock")
+Wenn "Ambiguous" gesetzt ist, trage die wahrscheinlichste Interpretation ein und erkläre den Zweifel in "Comment".
+
+"Contains_Geo_Reference":
+- "Yes": In Schritt 1 wurde mindestens ein Bezug extrahiert, auch wenn er zweifelhaft ist. Zweifel werden über "Confidence" ausgedrückt.
+- "No": Nichts im Namen könnte sich auf einen Ort beziehen. Dann sind alle Bezugsfelder null, "Reference_Type" ist null und "Confidence" ist "Unambiguous".
+
+"Reference_Type":
+- "Text" für ausgeschriebene Ortsnamen und davon abgeleitete Wörter
+- "Abbreviation", "Postal Code" oder "Emoji" für diese Arten von Bezügen
+- "Multiple", wenn die Bezüge von mehr als einer Art sind
+- "Undefined" für einen Bezug, der zu keiner dieser Arten passt
+- null, wenn es keinen Bezug gibt
+
+"Comment": ein kurzer Satz auf Deutsch oder ein leerer String, wenn es nichts anzumerken gibt.
+
+Beispiele (Eingabename → Ausgabeobjekt):
+
+"Info HH 🇩🇪" →
+{{"Chat_ID": "...", "Chat_Name_Raw": "Info HH 🇩🇪", "Contains_Geo_Reference": "Yes", "Reference_Original": ["HH", "🇩🇪"], "Reference_Country": ["Deutschland"], "Reference_Region": ["Hamburg"], "Reference_City": ["Hamburg"], "Reference_Type": "Multiple", "Confidence": "Unambiguous", "Comment": "HH ist die übliche Abkürzung für Hamburg."}}
+
+"Frankfurt Stellenmarkt" →
+{{"Chat_ID": "...", "Chat_Name_Raw": "Frankfurt Stellenmarkt", "Contains_Geo_Reference": "Yes", "Reference_Original": ["Frankfurt"], "Reference_Country": ["Deutschland"], "Reference_Region": ["Hessen"], "Reference_City": ["Frankfurt am Main"], "Reference_Type": "Text", "Confidence": "Ambiguous", "Comment": "Wahrscheinlich Frankfurt am Main, könnte aber auch Frankfurt (Oder) sein."}}
+
+"Amerikaner Backrezepte" →
+{{"Chat_ID": "...", "Chat_Name_Raw": "Amerikaner Backrezepte", "Contains_Geo_Reference": "Yes", "Reference_Original": ["Amerikaner"], "Reference_Country": ["Vereinigte Staaten"], "Reference_Region": null, "Reference_City": null, "Reference_Type": "Text", "Confidence": "Ambiguous", "Comment": "Im Backkontext ist mit Amerikaner wahrscheinlich das Gebäck gemeint, nicht Amerikaner als Personen."}}
+
+"Kochen ohne Stress" →
+{{"Chat_ID": "...", "Chat_Name_Raw": "Kochen ohne Stress", "Contains_Geo_Reference": "No", "Reference_Original": null, "Reference_Country": null, "Reference_Region": null, "Reference_City": null, "Reference_Type": null, "Confidence": "Unambiguous", "Comment": ""}}
+
+Eingabe: ein JSON-Array von Chats, jeweils mit "Chat_ID" und "Chat_Name_Raw":
+{name}
+
+Ausgabe: ein JSON-Array mit genau einem Objekt pro Eingabe-Chat, in derselben Reihenfolge, ohne Text davor oder danach. Übernimm "Chat_ID" und "Chat_Name_Raw" unverändert aus der Eingabe. Jedes Objekt muss diesem Schema folgen:
+
+{{
+  "Chat_ID": string,
+  "Chat_Name_Raw": string,
+  "Contains_Geo_Reference": "Yes" | "No",
+  "Reference_Original": [string] | null,
+  "Reference_Country": [string] | null,
+  "Reference_Region": [string] | null,
+  "Reference_City": [string] | null,
+  "Reference_Type": "Text" | "Abbreviation" | "Postal Code" | "Emoji" | "Multiple" | "Undefined" | null,
+  "Confidence": "Unambiguous" | "Ambiguous",
+  "Comment": string
+}}

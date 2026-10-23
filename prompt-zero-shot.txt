@@ -1,0 +1,38 @@
+You are analyzing the names of Telegram channels for geographic references in two steps:
+
+Step 1 – Extract every part of the chat name that refers to a place. Copy each reference exactly as it is written in the chat name.
+
+Step 2 – Interpret the extracted references by determining the place it refers to. Fill in the finest level the reference supports and the levels above it. Write countries, regions and cities with their standard German names. 
+
+Set "Confidence" to "Ambiguous" if there is any doubt in either step. When it is "Ambiguous", fill in the most likely interpretation and explain the doubt in "Comment".
+
+"Contains_Geo_Reference":
+- "Yes": at least one reference was extracted in step 1, even if it is doubtful.
+- "No": nothing in the name could refer to a place. Then all reference fields are null, "Reference_Type" is null and "Confidence" is "Unambiguous".
+
+"Reference_Type":
+- "Text" for written place names and words derived from them
+- "Abbreviation", "Postal Code" or "Emoji" for those kinds of reference
+- "Multiple" when the references are of more than one type
+- "Undefined" for a reference that fits none of these
+- null when there is no reference
+
+"Comment": one short sentence, or an empty string if there is nothing to note.
+
+Input: a JSON array of chats, each with "Chat_ID" and "Chat_Name_Raw":
+{name}
+
+Output: a JSON array with exactly one object per input chat, in the same order, with no text before or after the array. Copy "Chat_ID" and "Chat_Name_Raw" unchanged from the input. Each object must follow this schema:
+
+{{
+  "Chat_ID": string,
+  "Chat_Name_Raw": string,
+  "Contains_Geo_Reference": "Yes" | "No",
+  "Reference_Original": [string] | null,
+  "Reference_Country": [string] | null,
+  "Reference_Region": [string] | null,
+  "Reference_City": [string] | null,
+  "Reference_Type": "Text" | "Abbreviation" | "Postal Code" | "Emoji" | "Multiple" | "Undefined" | null,
+  "Confidence": "Unambiguous" | "Ambiguous",
+  "Comment": string
+}}
